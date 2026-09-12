@@ -1,0 +1,38 @@
+type: plugin4
+
+name: ClaudeWarp
+displayName: Claude Code in Warp
+description: |
+  Live status tiles for Claude Code sessions running in Warp panes, one keypad page per Warp tab.
+  Press a tile to jump straight to that pane.
+
+pluginFileName: ClaudeWarpPlugin.dll
+version: 0.1.0
+author: vsemenchenko
+copyright: Copyright © 2026 vsemenchenko. All rights reserved.
+
+pluginFolderMac: bin
+pluginFolderWin: bin
+
+# The keypad only. Everything here is a grid of session tiles you read and press; the Dialpad has
+# too few keys and the Actions Ring is not somewhere to read a project name off a tile.
+supportedDevices:
+    - MxCreativeKeypad
+
+# A deck of session tiles is for watching sessions WHILE working somewhere else, so it must not be
+# bound to an application - an application profile would switch away the moment you focused Warp.
+# This has to agree with Plugin.HasNoApplication and with there being no ClientApplication subclass.
+pluginCapabilities:
+    - HasNoApplication
+
+# 6.4 is the first Logi Plugin Service on the .NET 10 runtime; this net10.0 DLL will not load on the
+# older .NET 8 based services. Installed here: 6.4.1.3246.
+minimumLoupedeckVersion: 6.4
+
+license: MIT
+licenseUrl: https://opensource.org/licenses/MIT
+
+# Shown in Options+ and the Loupedeck Marketplace. Without homePageUrl, Options+ falls back to
+# loupedeck.com, which tells a user nothing about where this plugin came from.
+homePageUrl: https://github.com/pffan91/claudewarp-keypad-mx
+supportPageUrl: https://github.com/pffan91/claudewarp-keypad-mx/issues

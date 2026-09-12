@@ -1,0 +1,33 @@
+{
+  "//": "Copy to ~/.claude/keypad/config.json. Re-read once a second - no restart, no rebuild.",
+
+  "//label": "slug = Claude Code's session name minus its random suffix (matches Warp's tab).",
+  "//label2": "prompt = the opening prompt you typed.",
+  "label": "prompt",
+
+  "//keys": "The folder's bottom row, left to right. Each one also becomes a draggable action in",
+  "//keys2": "Options+ under Claude Code in Warp > Commands, so you can put it on a home-page key.",
+  "//keys3": "Remove this whole block to keep the built-in row: esc, /clear, /compact.",
+  "//keys4": "An empty list gives all eight tiles to sessions. Seven keys is the maximum, so that",
+  "//keys5": "at least one session tile always survives.",
+
+  "//text": "text    typed into the pane, exactly as written (a trailing space is kept).",
+  "//submit": "submit  press Return afterwards. Leave it off for commands you want to add to.",
+  "//key": "key     \"escape\" interrupts instead of typing. Ignores text and submit.",
+  "//label3": "label   what the key shows. Defaults to the text.",
+
+  "keys": [
+    { "label": "esc", "key": "escape" },
+    { "label": "ok", "text": "", "submit": true },
+    { "label": "/clear", "text": "/clear", "submit": true },
+    { "label": "/compact", "text": "/compact ", "submit": false },
+    { "label": "continue", "text": "continue", "submit": true }
+  ],
+
+  "//ok": "An empty text with submit is a bare Return - it answers a plan approval or a question",
+  "//ok2": "dialog, which is the keystroke most worth saving if you run with plan mode on.",
+
+  "//safety": "Anything here is typed into the focused Warp pane as if you had typed it, so treat",
+  "//safety2": "it like a shell alias. It is passed to the system as an argument rather than",
+  "//safety3": "interpolated into a script, so quotes and backslashes cannot break out."
+}

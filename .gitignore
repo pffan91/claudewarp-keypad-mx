@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Build output. The plugin builds into ClaudeWarpPlugin/bin/, which is also what the
+# .link file in the Logi plugin directory points at - it is a local artefact, never a commit.
+ClaudeWarpPlugin/bin/
+ClaudeWarpPlugin/src/obj/
+
+# Local IDE/run configuration with machine-specific paths.
+*.user
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Written by install-hooks.sh before it edits ~/.claude/settings.json.
+*.claudewarp.bak
