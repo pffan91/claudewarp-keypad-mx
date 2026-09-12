@@ -5,7 +5,8 @@ per the [Actions SDK approval guidelines](https://logitech.github.io/actions-sdk
 and the [Marketplace Developer Agreement](https://loupedeck.com/us/marketplace-developer-agreement/).
 
 **Status:** `ClaudeWarp_1.0.0.lplug4` **builds, packs and verifies clean** (64 KB, 5 files, no host
-assemblies, no symbols). The repo is pushed and **every user-facing link resolves**. Not submitted.
+assemblies, no symbols), is **installed and verified on the hardware**, and every user-facing link
+resolves. Not submitted.
 
 The setup flow is **verified on real hardware, against the installed package** — not the dev build.
 The log records `loaded from …/Plugins/ClaudeWarp`, with no `.link` shadowing it, and the wiring test
@@ -139,6 +140,18 @@ done
       reason; the shell installer in `hooks/` remains for people working from source.
 - [x] The **off switch reaches users who never had the repo**: long press unwires, and the plugin
       owns both directions.
+- [x] **Nothing is leaked across a plugin reload.** `Plugin.Unload` now disposes the session store
+      (`FileSystemWatcher` + a 2 s poll timer + the debounce timer), the config poll, the accessibility
+      event and the setup timer. Statics live per `AssemblyLoadContext`, not per process, so anything
+      left running roots its whole dead context.
+
+      This was found the hard way: `SessionStore.Dispose` existed but nothing called it, so twenty
+      reloads in a day took the host to **114% CPU and 664 threads**, at which point keys painted
+      blank, the folder took ten seconds to open and the Options+ config view stalled. A reviewer
+      enabling and disabling the plugin a few times would have seen a slice of it. Load time after the
+      fix: **136 ms**, against 2,897 ms on the degraded host.
+
+      Worth re-checking on any future change that adds a timer, a watcher or a static event.
 
 ### Testing
 

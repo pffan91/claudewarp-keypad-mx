@@ -74,6 +74,7 @@ namespace Loupedeck.ClaudeWarpPlugin
             KeypadConfig.Shutdown();
             HookWiring.Shutdown();
             WarpInput.Shutdown();
+            SessionStore.Shutdown();
         }
     }
 }

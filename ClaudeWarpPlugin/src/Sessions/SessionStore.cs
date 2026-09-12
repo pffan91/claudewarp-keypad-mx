@@ -72,6 +72,10 @@ namespace Loupedeck.ClaudeWarpPlugin
 
         private List<TabGroup> _groups = new();
 
+        // A timer callback can already be in flight when Dispose runs; this stops it doing work
+        // against a torn-down watcher.
+        private volatile Boolean _disposed;
+
         // Where each pane was last seen. Warp persists its pane tree lazily, so closing one pane makes
         // a still-live pane briefly vanish from the database - and treating that blink as fact moved
         // sessions into the "unplaced" group, which renumbered every page. A pane that was in a tab a
@@ -125,11 +129,30 @@ namespace Loupedeck.ClaudeWarpPlugin
             }
         }
 
-        private void OnFileEvent(Object sender, FileSystemEventArgs e) =>
-            this._debounce.Change(DebounceMs, Timeout.Infinite);
+        private void OnFileEvent(Object sender, FileSystemEventArgs e)
+        {
+            if (this._disposed)
+            {
+                return;
+            }
+
+            try
+            {
+                this._debounce.Change(DebounceMs, Timeout.Infinite);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Raced with Dispose; there is nothing left to schedule.
+            }
+        }
 
         private void Reload()
         {
+            if (this._disposed)
+            {
+                return;
+            }
+
             List<TabGroup> groups;
             try
             {
@@ -424,12 +447,34 @@ namespace Loupedeck.ClaudeWarpPlugin
                 ? n
                 : 0;
 
+        // Called from Plugin.Unload, via Shutdown.
+        //
+        // Nothing used to call this, and the cost was not a tidiness one. A plugin is reloaded on
+        // every update, every enable/disable and every rebuild, and statics live per AssemblyLoadContext
+        // rather than per process - so each reload left a live FileSystemWatcher and a 2 second poll
+        // timer behind, still querying Warp's database forever and rooting its whole dead context.
+        // Twenty reloads in a day took the host to 114% CPU and 664 threads, at which point the device
+        // repaints slowly enough to look broken.
         public void Dispose()
         {
+            this._disposed = true;
+            this.Changed = null;
             this._watcher.EnableRaisingEvents = false;
             this._watcher.Dispose();
             this._debounce.Dispose();
             this._poll.Dispose();
+        }
+
+        // Disposes the singleton if it was ever built, and does not build one just to tear it down.
+        //
+        // Safe despite the instance being static: the next load gets a fresh context with its own
+        // Lazy, so the disposed instance can never be handed out again.
+        public static void Shutdown()
+        {
+            if (Lazy.IsValueCreated)
+            {
+                Lazy.Value.Dispose();
+            }
         }
     }
 
