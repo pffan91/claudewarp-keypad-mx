@@ -5,11 +5,11 @@ per the [Actions SDK approval guidelines](https://logitech.github.io/actions-sdk
 and the [Marketplace Developer Agreement](https://loupedeck.com/us/marketplace-developer-agreement/).
 
 **Status:** `ClaudeWarp_1.0.0.lplug4` **builds, packs and verifies clean** (64 KB, 5 files, no host
-assemblies, no symbols). Not submitted. Two things block submission, in this order:
+assemblies, no symbols). The repo is pushed and **every user-facing link resolves**. Not submitted.
 
-1. **Push the repo.** `licenseUrl` points at `docs/EULA.md` on GitHub, which is a live **404** until
-   the commit lands. Approval checks that every external link resolves.
-2. **Test on the hardware.** Nothing below under Testing has been exercised on a real keypad.
+The setup flow is **verified on real hardware, against the installed package** — not the dev build.
+The log records `loaded from …/Plugins/ClaudeWarp`, with no `.link` shadowing it, and the wiring test
+ran twenty seconds later. Remaining: accept the Developer Agreement and submit.
 
 Expect roughly **10 working days** for review, based on the turnaround another Claude Code plugin
 reported for the same queue.
@@ -99,10 +99,14 @@ consent, and unlike an install-time side effect it has an obvious gesture to rev
 ### Links
 
 - [x] `homePageUrl` → 200. `supportPageUrl` → 200. The README `#setup` anchor → 200.
-- [ ] **`licenseUrl` → 404.** `blob/main/docs/EULA.md` does not exist until the repo is pushed.
-      **This is a submission blocker.**
+- [x] `licenseUrl` → 200. `docs/EULA.md` and `docs/PRIVACY.md` are live on `main`.
+- [x] Both anchors the plugin links to from its Options+ notices exist in the pushed README:
+      `#setup` and `#3-allow-typing-only-for-the-command-keys`. Checked against the committed file,
+      not by fetching the URL — a fragment never reaches the server, so a 200 proves nothing there.
+- [x] Pushed tree audited: no `obj/`, `bin/`, `.lplug4`, `.DS_Store`, `.bak` or `.csproj.user`, and
+      no local paths or private project names.
 
-Re-run this after pushing; all four must be 200:
+Re-run this after any change to the URLs; all four must be 200:
 
 ```sh
 for u in \
@@ -115,8 +119,8 @@ done
 ```
 
 > Note: claude-console's rule that *no user-facing link may point at github.com* is **theirs**,
-  > not Logitech's — they were taking their repo private. This repo is public and MIT, so GitHub
-  > links are fine.
+> not Logitech's — they were taking their repo private. This repo is public and MIT, so GitHub
+> links are fine.
 
 ### Behaviour
 
@@ -138,16 +142,26 @@ done
 
 ### Testing
 
-- [ ] Tested on the supported hardware (MX Creative Keypad).
-- [ ] **Clean-machine pass** — a fresh macOS user account with no dev tools, no Homebrew, no Xcode:
-  - [ ] Install the `.lplug4` by double-clicking it.
-  - [ ] Keys appear under the **Claude** group in Options+ and can be dragged onto a page.
+- [x] Tested on the supported hardware (MX Creative Keypad): tiles, cycling, long-press interrupt,
+      the Commands group and *Send to Claude*.
+- [x] **The setup cycle, end to end.** Evidenced, not just reported: the log shows
+      `wired …/settings.json: removed 0, added 8`, the resulting file carries exactly our 8 events
+      with the right arguments and matchers (`*` on PreToolUse/PostToolUse, `permission_prompt` on
+      Notification), all pointing at the extracted `~/.claude/keypad/keypad-hook.sh` rather than the
+      repo copy — and session state files are being written through it.
+- [x] **Installed from the package by double-clicking the `.lplug4`**, on the dev machine. Confirmed
+      it is the package and not the source tree that loads: no `ClaudeWarpPlugin.link` in the Plugins
+      directory, and the log says
+      `Plugin 'ClaudeWarp' version '1.0.0' loaded from '…/Plugins/ClaudeWarp' in 124 ms`.
+  - [x] Keys appear under the **Claude** group in Options+ and can be dragged onto a page.
+  - [x] Set up → *Press again* → wired, then long press → unwired, all against the installed package.
+  - [x] A Claude Code session in a Warp pane produces a tile; state files are written through the
+        extracted hook.
+- [ ] **Clean-machine pass** — the above was on a machine with the full toolchain. Still worth one run
+      on a fresh macOS account with no dev tools, no Homebrew and no Xcode, because that is the only
+      way to catch a hidden dependency on something the dev machine happens to have:
   - [ ] Before setup: keys read **Set up**; `~/.claude/settings.json` is byte-identical to before.
   - [ ] One press → *Press again*. Wait 20 s → back to **Set up**, still no write.
-  - [ ] Two presses → wired; Options+ shows the notice; the backup file exists; a `git diff` of
-        `settings.json` shows **only** additions.
-  - [ ] Start a Claude Code session in a Warp pane → a tile appears and turns coral.
-  - [ ] Long press → unwired; the diff is back to empty.
   - [ ] Install over an existing install; confirm `~/.claude/keypad/config.json` survives untouched.
 - [x] **Accessibility permission is reported, not silent.** The command keys drive Warp through
       `osascript`/System Events, and without the grant every typing key does nothing. `WarpInput`
@@ -158,8 +172,11 @@ done
 - [ ] **Confirm that notice actually appears.** The detection is reasoned from the documented error,
       not observed — Accessibility is granted on the dev machine, so the denial path has never run.
       Revoke it for Logi Plugin Service, press a command key, and check the Options+ strip.
-- [ ] Verify with a second Claude Code plugin installed (ClaudeDesktop, ClaudeConsole) that all three
-      coexist and no hook entries are lost.
+- [ ] **Coexistence is now untestable on the dev machine** — ClaudeDesktop and ClaudeConsole have
+      been uninstalled. It is covered by the 37-check suite in the scratchpad harness, which wires
+      and unwires against a settings file carrying both plugins' hooks plus a `statusLine` they own,
+      and asserts every non-ours entry survives. A reviewer may well have one of them installed, so
+      this stays open as a real-world gap rather than a passed test.
 
 ### Build and pack
 
@@ -181,10 +198,12 @@ The last line must print nothing.
 
 ### Submit
 
-- [ ] Push the repo, then re-run the link check above — all four must be 200.
-- [ ] Local install test from the package, not the dev link:
-      `logiplugintool install ./ClaudeWarp_1.0.0.lplug4`. Remove the `.link` file first, or the
-      service will be loading the source tree instead of the package and the test proves nothing.
+- [x] Repo pushed; link check green.
+- [x] Local install test from the package, not the dev link — done by double-clicking the `.lplug4`.
+      If you re-test after a build, delete `ClaudeWarpPlugin.link` first: the csproj `PostBuild`
+      target recreates it on every build, and it shadows the installed package.
+- [x] `ClaudeWarp_1.0.0.lplug4` rebuilt from current source: 5 files, 64 KB zipped, `verify` OK, no host
+      assemblies or symbols.
 - [ ] Submit at <https://marketplace.logitech.com/contribute>
 
 ## Listing copy
