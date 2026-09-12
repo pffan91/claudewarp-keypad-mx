@@ -14,7 +14,7 @@ namespace Loupedeck.ClaudeWarpPlugin
         {
         }
 
-        protected override BitmapImage GetCommandImage(String actionParameter, PluginImageSize imageSize) =>
+        protected override BitmapImage GetStateImage(PluginImageSize imageSize) =>
             TileRenderer.Working(Count(AllSessions(), "busy"), imageSize);
 
         // Longest-running first, so the first press lands on the likeliest to be stuck, and pressing

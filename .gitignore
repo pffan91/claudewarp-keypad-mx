@@ -14,3 +14,6 @@ ClaudeWarpPlugin/src/obj/
 
 # Written by install-hooks.sh before it edits ~/.claude/settings.json.
 *.claudewarp.bak
+
+# packaged plugin, rebuilt from source
+*.lplug4

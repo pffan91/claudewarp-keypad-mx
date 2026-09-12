@@ -213,6 +213,37 @@ namespace Loupedeck.ClaudeWarpPlugin
             return b.ToImage();
         }
 
+        // The key before the plugin is connected to Claude Code, and the confirmation that connects it.
+        //
+        // Two lines rather than one, because "Set up" alone does not say set up what, and this key can
+        // be sitting on a home page among thirty others. The armed state changes the colour as well as
+        // the words: the difference between "nothing has happened yet" and "the next press edits a
+        // file" is too important to rest on reading two small words.
+        public static BitmapImage Setup(SetupAction armed, PluginImageSize size)
+        {
+            using var b = new BitmapBuilder(size);
+
+            var bg = armed switch
+            {
+                SetupAction.Enable => Busy,
+                SetupAction.Disable => Attention,
+                _ => Neutral,
+            };
+
+            var (line, note) = armed switch
+            {
+                SetupAction.Enable => ("Press again", "to enable"),
+                SetupAction.Disable => ("Press again", "to turn off"),
+                _ => ("Set up", "Claude Code"),
+            };
+
+            b.Clear(bg);
+            b.DrawText(line, 2, (Int32)(b.Height * 0.20), b.Width - 4, (Int32)(b.Height * 0.34), Foreground(bg), 15);
+            b.DrawText(note, 2, (Int32)(b.Height * 0.56), b.Width - 4, (Int32)(b.Height * 0.26), Tint(bg, 0.55), 10);
+
+            return b.ToImage();
+        }
+
         // The standalone key, meant for a home-page slot rather than this folder: how many sessions
         // are waiting on you, answered without opening anything.
         //

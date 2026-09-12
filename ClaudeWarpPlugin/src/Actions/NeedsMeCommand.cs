@@ -22,7 +22,7 @@ namespace Loupedeck.ClaudeWarpPlugin
             this._blink = new Timer(_ => this.OnBlink(), null, Timeout.Infinite, Timeout.Infinite);
         }
 
-        protected override BitmapImage GetCommandImage(String actionParameter, PluginImageSize imageSize)
+        protected override BitmapImage GetStateImage(PluginImageSize imageSize)
         {
             var all = AllSessions();
             return TileRenderer.NeedsMe(

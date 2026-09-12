@@ -10,12 +10,14 @@ namespace Loupedeck.ClaudeWarpPlugin
     //
     // The host chunks a dynamic folder's action list into pages, and on the MX Creative Keypad it
     // takes the top-left key for its own Back button, leaving EIGHT usable tiles per page (measured,
-    // not assumed - see FINDINGS.md). So emitting exactly eight names per Warp tab makes page N land
+    // not assumed - see docs/FINDINGS.md). So emitting exactly eight names per Warp tab makes page N land
     // on tab N for free, and the number of pages equals the number of tabs that actually have
     // sessions - which is why pressing the right button past the last tab does nothing.
     public class SessionsFolder : PluginDynamicFolder
     {
         private const Int32 TilesPerPage = 8;
+
+        private const String Setup = "setup";
 
         private static readonly Regex HexUuid = new("^[0-9a-f]{32}$", RegexOptions.Compiled);
 
@@ -46,6 +48,7 @@ namespace Loupedeck.ClaudeWarpPlugin
             this._open = true;
             Store.Changed += this.OnSessionsChanged;
             KeypadConfig.Changed += this.OnConfigChanged;
+            HookWiring.Changed += this.OnConfigChanged;
             this._tick.Change(TileRenderer.TickMs, TileRenderer.TickMs);
             return base.Activate();
         }
@@ -55,6 +58,7 @@ namespace Loupedeck.ClaudeWarpPlugin
             this._open = false;
             Store.Changed -= this.OnSessionsChanged;
             KeypadConfig.Changed -= this.OnConfigChanged;
+            HookWiring.Changed -= this.OnConfigChanged;
             this._tick.Change(Timeout.Infinite, Timeout.Infinite);
             return base.Deactivate();
         }
@@ -129,6 +133,13 @@ namespace Loupedeck.ClaudeWarpPlugin
         // session tiles and the command keys have to be counted together rather than separately.
         private List<String> BuildParameters()
         {
+            // Unwired, there are no sessions and never will be, so a page of blank tiles would be a
+            // convincing impression of a broken plugin. One tile that says what to do instead.
+            if (!HookWiring.IsWired || HookWiring.Armed != SetupAction.None)
+            {
+                return new List<String> { Setup };
+            }
+
             // Snapshotted once: the config file is re-read on a timer and must not change the split
             // halfway through building a page.
             var keys = KeypadConfig.Keys;
@@ -250,6 +261,13 @@ namespace Loupedeck.ClaudeWarpPlugin
                 return;
             }
 
+            if (actionParameter == Setup)
+            {
+                HookWiring.Announce(this.Plugin, HookWiring.Press());
+                this.ButtonActionNamesChanged();
+                return;
+            }
+
             if (actionParameter.StartsWith("k:", StringComparison.Ordinal))
             {
                 this.RunConfiguredKey(actionParameter);
@@ -366,6 +384,11 @@ namespace Loupedeck.ClaudeWarpPlugin
                 }
 
                 return TileRenderer.Blank(imageSize);
+            }
+
+            if (actionParameter == Setup)
+            {
+                return TileRenderer.Setup(HookWiring.Armed, imageSize);
             }
 
             if (actionParameter != null && actionParameter.StartsWith("k:", StringComparison.Ordinal))

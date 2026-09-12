@@ -19,6 +19,30 @@ namespace Loupedeck.ClaudeWarpPlugin
 
         public override void Load()
         {
+            // Turns a silent, log-only failure into something the user can see and act on. Reactive
+            // rather than checked up front: probing Accessibility at load would raise the system
+            // prompt before the user has pressed anything that needs it.
+            //
+            // Qualified, because inside a Plugin the bare name resolves to this.PluginStatus - the
+            // status message property - rather than to the enum.
+            WarpInput.AccessibilityDenied += (_, _) => this.OnPluginStatusChanged(
+                Loupedeck.PluginStatus.Error,
+                "macOS blocked the keystroke. Grant Logi Plugin Service access under System Settings > "
+                + "Privacy & Security > Accessibility, then press the key again.",
+                "https://github.com/pffan91/claudewarp-keypad-mx#3-allow-typing-only-for-the-command-keys",
+                "How to fix this");
+
+            // Everything this plugin writes on load stays inside ~/.claude/keypad/, a directory it
+            // owns. It does NOT wire itself into ~/.claude/settings.json here - that needs a
+            // confirmed press on a Set up key. See HookWiring and docs/SUBMISSION.md for why.
+            HookWiring.ExtractScript();
+            HookWiring.SeedConfig();
+
+            if (!HookWiring.IsWired)
+            {
+                PluginLog.Info("Claude Code hooks are not wired yet; press a Set up key to enable.");
+            }
+
             // Warm the store off this thread so the first folder open is already populated. Doing it
             // synchronously is what previously blew Load's 10 second budget and unregistered the
             // plugin; Task.Run keeps Load itself instant.
@@ -48,6 +72,8 @@ namespace Loupedeck.ClaudeWarpPlugin
             // The config poll is a timer on a static field, and statics are per load context rather
             // than per process. Without this, every reload leaves its predecessor's timer running.
             KeypadConfig.Shutdown();
+            HookWiring.Shutdown();
+            WarpInput.Shutdown();
         }
     }
 }

@@ -31,6 +31,10 @@ namespace Loupedeck.ClaudeWarpPlugin
             this.IsWidget = true;
 
             SessionStore.Instance.Changed += (_, _) => this.Refresh();
+
+            // Setup state is part of what this key displays, so it repaints on the same terms as a
+            // session count changing.
+            HookWiring.Changed += (_, _) => this.ActionImageChanged();
         }
 
         protected static List<SessionInfo> AllSessions() =>
@@ -48,6 +52,17 @@ namespace Loupedeck.ClaudeWarpPlugin
         // the press does nothing.
         protected abstract List<SessionInfo> Candidates();
 
+        // What this key shows once it has something to count.
+        protected abstract BitmapImage GetStateImage(PluginImageSize imageSize);
+
+        // Until the hooks are wired there are no sessions to count and never will be, so a key
+        // reporting a truthful zero would be indistinguishable from a broken one. It says what to do
+        // instead.
+        protected override BitmapImage GetCommandImage(String actionParameter, PluginImageSize imageSize) =>
+            HookWiring.IsWired && HookWiring.Armed == SetupAction.None
+                ? this.GetStateImage(imageSize)
+                : TileRenderer.Setup(HookWiring.Armed, imageSize);
+
         // Called when the counts change, before the repaint - for a key that drives a timer off them.
         protected virtual void OnCountsChanged(List<SessionInfo> all)
         {
@@ -59,6 +74,13 @@ namespace Loupedeck.ClaudeWarpPlugin
         // will not show you, so the count and the press have to agree.
         protected override void RunCommand(String actionParameter)
         {
+            // An armed key is answering a question, whatever it normally does.
+            if (!HookWiring.IsWired || HookWiring.Armed != SetupAction.None)
+            {
+                HookWiring.Announce(this.Plugin, HookWiring.Press());
+                return;
+            }
+
             var candidates = this.Candidates();
             if (candidates.Count == 0)
             {
@@ -85,6 +107,23 @@ namespace Loupedeck.ClaudeWarpPlugin
         // Returning empty stops the host writing the action's name across the key. The widget flag
         // is what actually gives us the whole face; the label is painted into the image instead.
         protected override String GetCommandDisplayName(String actionParameter, PluginImageSize imageSize) => "";
+
+        // Long press is the way back off. It only arms - the confirming press is a short one, so the
+        // gesture that turns the hooks off is the same two-step as the one that turned them on.
+        protected override Boolean ProcessButtonEvent2(String actionParameter, DeviceButtonEvent2 buttonEvent)
+        {
+            if (!HookWiring.IsWired || buttonEvent.EventType != DeviceButtonEventType.LongPress)
+            {
+                return false;
+            }
+
+            if (HookWiring.Armed == SetupAction.None)
+            {
+                HookWiring.Press();
+            }
+
+            return true;
+        }
 
         private void Refresh()
         {

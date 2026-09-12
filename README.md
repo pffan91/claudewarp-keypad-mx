@@ -104,11 +104,27 @@ In Logi Options+, everything appears under **Claude Code in Warp**:
 
 ### 2. Install the Claude Code hooks
 
+<a id="setup"></a>
+
+Two ways, and they do the same thing. If you installed from the Marketplace you only have the first.
+
+**From the keypad.** Until the hooks are wired, **Needs me**, **Working** and the sessions folder all
+show a **Set up** key. Press it once and it turns coral and reads *Press again*; press it again
+within 15 seconds and the hooks are written. **Long press** a wired key to take them back out, with
+the same two-step.
+
+The first press deliberately writes nothing. Editing a file outside the plugin is not something to do
+because someone pressed a key to find out what it was, so the confirming press is what actually does
+it — and a press left unconfirmed lapses after 15 seconds and changes nothing. Options+ posts a
+notice naming the file it changed and where the backup went.
+
+**From a terminal**, if you are working from the source:
+
 ```sh
 hooks/install-hooks.sh
 ```
 
-This is **additive and idempotent**. It appends one entry per event to `~/.claude/settings.json`,
+Both routes are **additive and idempotent**. It appends one entry per event to `~/.claude/settings.json`,
 tagged by the script name, and removes any previous entry of its own first so re-running never
 stacks duplicates. It backs the file up to `settings.json.claudewarp.bak`, never touches
 `statusLine`, and leaves other plugins' hooks alone (this machine runs it alongside Logitech's
@@ -125,7 +141,13 @@ ClaudeDesktop's blocking approval hook on the same event.
 
 Sessions already running when you install are picked up on their next tool call.
 
-To remove: `hooks/install-hooks.sh --uninstall`.
+To remove: long press a wired key, or `hooks/install-hooks.sh --uninstall`. Either removes only the
+entries tagged `keypad-hook.sh` and leaves the rest of the file alone.
+
+The plugin never writes to `~/.claude/settings.json` on install or on load — only a confirmed press
+does. On load it writes just two files, both inside `~/.claude/keypad/`, which it owns: a copy of
+`keypad-hook.sh` (so a Marketplace install has one without the repo) and a starter `config.json` if
+you do not already have one.
 
 ### 3. Allow typing (only for the command keys)
 
@@ -305,6 +327,7 @@ ClaudeWarpPlugin/src/
   Sessions/SessionStore.cs   file watching, parsing, liveness reaping, seeding
   Sessions/SessionTitles.cs  reads the session name and opening prompt out of a transcript
   Sessions/KeypadConfig.cs   config.json: tile text and the command keys
+  Sessions/HookWiring.cs     the Set up key: reads and (on confirmation) edits settings.json
   Warp/WarpTabs.cs           the read-only warp.sqlite join
   Warp/WarpFocus.cs          focusing a pane by its Warp URL
   Warp/WarpInput.cs          typing into Warp, via System Events
@@ -313,7 +336,10 @@ config.example.json        annotated configuration, ready to copy
 docs/keypad-home.jpg       the home-page screenshot used above
 tools/make-icon.swift      regenerates metadata/Icon256x256.png
 env.sh                     dotnet environment for Homebrew's layout
-FINDINGS.md                everything measured on real hardware rather than inferred from docs
+docs/FINDINGS.md           everything measured on real hardware rather than inferred from docs
+docs/SUBMISSION.md         Logitech Marketplace checklist
+docs/EULA.md               licence terms, required for Marketplace submission
+docs/PRIVACY.md            what the plugin reads and writes; it has no network code
 ```
 
 ## Known limits

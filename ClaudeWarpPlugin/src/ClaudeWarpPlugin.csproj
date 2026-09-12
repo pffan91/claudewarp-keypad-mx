@@ -24,6 +24,20 @@
     <PluginShortName>ClaudeWarp</PluginShortName>
   </PropertyGroup>
 
+  <!-- A shipped package should carry the plugin and nothing else. Debug symbols are useful in the
+       dev loop and are just weight (and a little source-path disclosure) inside a .lplug4. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <!-- The hook script travels inside the DLL, not beside it. A Marketplace user never has this
+       repository, and the package directory is removed when the plugin is uninstalled, so the only
+       place it can live and still be extractable is the assembly itself. -->
+  <ItemGroup>
+    <EmbeddedResource Include="../../hooks/keypad-hook.sh" LogicalName="Loupedeck.ClaudeWarpPlugin.keypad-hook.sh" />
+  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="PluginApi">
       <HintPath>$(PluginApiDir)PluginApi.dll</HintPath>

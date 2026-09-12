@@ -12,6 +12,17 @@ namespace Loupedeck.ClaudeWarpPlugin
     {
         public const String WarpBundleId = "dev.warp.Warp-Stable";
 
+        // Raised the first time macOS refuses a keystroke for want of Accessibility permission.
+        //
+        // Without this the failure is a line in a log file, which is to say invisible: every typing
+        // key silently does nothing and the plugin looks broken rather than unpermitted. The plugin
+        // subscribes once and turns it into a notice in Options+.
+        public static event EventHandler AccessibilityDenied;
+
+        // One notice per spell of being denied, rather than one per press. Reset on the next success,
+        // so granting permission and later revoking it reports again.
+        private static Boolean _reported;
+
         // Refuses to type unless Warp is genuinely frontmost. Without this check a mistimed press
         // would send "/clear" into whatever application happened to be in front.
         //
@@ -56,15 +67,7 @@ end run";
             // be read as AppleScript. This is what makes user-supplied command text safe.
             var result = Run("/usr/bin/osascript", "-e", Script, text, submit ? "1" : "0").Trim();
 
-            if (result != "ok")
-            {
-                PluginLog.Warning(result == "not-warp"
-                    ? "Did not type: Warp is not the frontmost application."
-                    : $"Could not type into Warp: {result}. Logi Plugin Service may need Accessibility permission (System Settings > Privacy & Security > Accessibility).");
-                return false;
-            }
-
-            return true;
+            return Check(result, "type into Warp");
         }
 
         // Interrupts whatever the session is doing. Escape is a key code rather than a character,
@@ -83,15 +86,41 @@ end run";
         {
             var result = Run("/usr/bin/osascript", "-e", EscapeScript).Trim();
 
-            if (result != "ok")
+            return Check(result, "send Escape to Warp");
+        }
+
+        // Called from Plugin.Unload. A static event holding a handler that captures the plugin would
+        // keep the whole previous load context alive across a reload.
+        public static void Shutdown() => AccessibilityDenied = null;
+
+        private static Boolean Check(String result, String what)
+        {
+            if (result == "ok")
             {
-                PluginLog.Warning(result == "not-warp"
-                    ? "Did not send Escape: Warp is not the frontmost application."
-                    : $"Could not send Escape to Warp: {result}. Logi Plugin Service may need Accessibility permission (System Settings > Privacy & Security > Accessibility).");
+                _reported = false;
+                return true;
+            }
+
+            if (result == "not-warp")
+            {
+                PluginLog.Warning($"Did not {what}: Warp is not the frontmost application.");
                 return false;
             }
 
-            return true;
+            PluginLog.Warning($"Could not {what}: {result}");
+
+            // -1719 is what System Events returns when the calling process is not trusted for
+            // Accessibility; the message accompanies it in most macOS versions, so match either.
+            var denied = result.Contains("-1719", StringComparison.Ordinal)
+                || result.Contains("not allowed assistive access", StringComparison.OrdinalIgnoreCase);
+
+            if (denied && !_reported)
+            {
+                _reported = true;
+                AccessibilityDenied?.Invoke(null, EventArgs.Empty);
+            }
+
+            return false;
         }
 
         private static String Run(String exe, params String[] args)

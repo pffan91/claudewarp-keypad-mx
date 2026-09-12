@@ -7,12 +7,15 @@ description: |
   Press a tile to jump straight to that pane.
 
 pluginFileName: ClaudeWarpPlugin.dll
-version: 0.1.0
+version: 1.0.0
 author: vsemenchenko
 copyright: Copyright © 2026 vsemenchenko. All rights reserved.
 
+# macOS only, and the metadata has to say so: approval checks that the claimed operating system
+# support matches reality. Everything here goes through warp://session deep links, osascript and
+# Warp's own sqlite database - none of which exist on Windows. Omitting pluginFolderWin is how the
+# package declares that.
 pluginFolderMac: bin
-pluginFolderWin: bin
 
 # The keypad only. Everything here is a grid of session tiles you read and press; the Dialpad has
 # too few keys and the Actions Ring is not somewhere to read a project name off a tile.
@@ -29,8 +32,10 @@ pluginCapabilities:
 # older .NET 8 based services. Installed here: 6.4.1.3246.
 minimumLoupedeckVersion: 6.4
 
+# MIT is the grant; the Marketplace Developer Agreement separately requires the developer to supply
+# an EULA naming themselves as licensor, so licenseUrl points at that rather than a generic MIT page.
 license: MIT
-licenseUrl: https://opensource.org/licenses/MIT
+licenseUrl: https://github.com/pffan91/claudewarp-keypad-mx/blob/main/docs/EULA.md
 
 # Shown in Options+ and the Loupedeck Marketplace. Without homePageUrl, Options+ falls back to
 # loupedeck.com, which tells a user nothing about where this plugin came from.
